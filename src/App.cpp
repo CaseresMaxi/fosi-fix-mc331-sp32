@@ -10,13 +10,13 @@ void App::begin() {
 
   Logger::instance().begin(Config::kLogCapacity);
   Logger::instance().info(String(Config::kAppName) + " " + Config::kVersion);
-  Logger::instance().info("Inicializando");
+  Logger::instance().info("Initializing");
   Logger::instance().info("Logs via USB-Serial (CH343), no USB-OTG");
 
   if (!settings_.begin()) {
     Logger::instance().error("Settings init failed");
   } else {
-    Logger::instance().info("Config listo");
+    Logger::instance().info("Settings ready");
   }
 
   usb_.setAutoMode(settings_.data().autoMode);
@@ -34,9 +34,9 @@ void App::begin() {
                        entry.millis);
   });
 
-  Logger::instance().info("Iniciando USB Host (OTG)");
+  Logger::instance().info("Starting USB Host (OTG)");
   if (!usb_.begin()) {
-    Logger::instance().error("USB Host no disponible");
+    Logger::instance().error("USB Host unavailable");
   }
 }
 

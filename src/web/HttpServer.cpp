@@ -46,7 +46,7 @@ const char* usbStateName(Mc331State state) {
 }
 
 const char kFallbackHtml[] PROGMEM = R"HTML(<!DOCTYPE html>
-<html lang="es"><head>
+<html lang="en"><head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>FosiFix Setup</title>
 <style>
@@ -62,24 +62,24 @@ button{margin-top:1rem;background:#0f766e;color:#fff;border:0;font-weight:600}
 .msg{margin-top:1rem;padding:.8rem;border-radius:10px;background:#e7f5f2;display:none}
 </style></head><body><main>
 <h1>FosiFix</h1>
-<p>Elegí tu WiFi de casa. Después volvé a tu red y abrí <b>http://fosifix.local</b></p>
-<button type="button" id="scan">Buscar redes</button>
+<p>Pick your home WiFi. Then switch back to your network and open <b>http://fosifix.local</b></p>
+<button type="button" id="scan">Scan networks</button>
 <ul id="nets"></ul>
 <label>SSID</label><input id="ssid"/>
 <label>Password</label><input id="pass" type="password"/>
 <label>Hostname</label><input id="host" value="fosifix"/>
-<button type="button" id="save">Guardar y conectar</button>
+<button type="button" id="save">Save and connect</button>
 <div class="msg" id="msg"></div>
 <script>
 const nets=document.getElementById('nets');
 const msg=document.getElementById('msg');
 async function scan(){
-  nets.innerHTML='Buscando…';
+  nets.innerHTML='Scanning…';
   const r=await fetch('/api/wifi/scan'); const list=await r.json();
   nets.innerHTML='';
   list.sort((a,b)=>b.rssi-a.rssi).forEach(n=>{
     const li=document.createElement('li');
-    li.textContent=(n.ssid||'(oculta)')+'  '+n.rssi+' dBm'+(n.secure?' 🔒':'');
+    li.textContent=(n.ssid||'(hidden)')+'  '+n.rssi+' dBm'+(n.secure?' 🔒':'');
     li.onclick=()=>{document.getElementById('ssid').value=n.ssid||''};
     nets.appendChild(li);
   });
@@ -90,7 +90,7 @@ document.getElementById('save').onclick=async()=>{
   const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   const d=await r.json();
   msg.style.display='block';
-  msg.textContent=d.ok?'Guardado. Volvé a tu WiFi de casa y abrí http://fosifix.local':'Error al guardar';
+  msg.textContent=d.ok?'Saved. Switch to your home WiFi and open http://fosifix.local':'Save failed';
 };
 scan().catch(()=>{});
 </script></main></body></html>)HTML";
@@ -126,11 +126,11 @@ bool HttpServer::begin() {
   if (wifi_.isSetupMode()) {
     dns_.start(53, "*", WiFi.softAPIP());
     dnsActive_ = true;
-    Logger::instance().info("Captive DNS activo");
+    Logger::instance().info("Captive DNS active");
   }
 
   started_ = true;
-  Logger::instance().info(String("Servidor iniciado · UI ") + FOSIFIX_UI_BUILD);
+  Logger::instance().info(String("HTTP server started · UI ") + FOSIFIX_UI_BUILD);
   return true;
 }
 

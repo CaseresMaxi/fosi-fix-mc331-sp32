@@ -56,20 +56,20 @@
   };
 
   const fmtAgo = (deviceMs) => {
-    if (!deviceMs) return "Nunca";
+    if (!deviceMs) return "Never";
     const age = Math.max(0, Date.now() - (bootSkew + deviceMs));
-    if (age < 5000) return "Ahora";
-    return `Hace ${fmtUptime(age)}`;
+    if (age < 5000) return "Just now";
+    return `${fmtUptime(age)} ago`;
   };
 
   const setUsbUi = (usb) => {
     const connected = !!usb.connected;
     els.usbPill.className = "status-pill " + (connected ? "ok" : "warn");
-    els.usbPill.textContent = connected ? "MC331 conectado" : "MC331 desconectado";
-    els.usbTitle.textContent = connected ? "MC331 listo" : "Esperando MC331";
+    els.usbPill.textContent = connected ? "MC331 connected" : "MC331 disconnected";
+    els.usbTitle.textContent = connected ? "MC331 ready" : "Waiting for MC331";
     els.usbDetail.textContent = connected
       ? `VID 0x${Number(usb.vid).toString(16)} · PID 0x${Number(usb.pid).toString(16)} · ${usb.state}`
-      : `Estado: ${usb.state || "waiting"}`;
+      : `State: ${usb.state || "waiting"}`;
     els.lastFix.textContent = fmtAgo(usb.lastFixMs);
     els.fixCount.textContent = usb.fixCount ?? 0;
     els.connectCount.textContent = usb.connectCount ?? 0;
@@ -90,14 +90,14 @@
       const host = data.wifi.hostname || "fosifix";
       els.setupUrl.textContent = `http://${host}.local`;
       els.wifiState.textContent = setupMode
-        ? "Modo configuración (AP)"
-        : (data.wifi.connected ? "Conectado a tu red" : "Desconectado");
+        ? "Setup mode (AP)"
+        : (data.wifi.connected ? "Connected to your network" : "Disconnected");
       els.wifiSsid.textContent = data.wifi.ssid || "—";
       els.wifiIp.textContent = data.wifi.ip || "—";
       els.wifiHost.textContent = `${host}.local`;
       els.wifiHint.innerHTML = setupMode
-        ? `Después de guardar, volvé a tu WiFi de casa y abrí <strong>http://${host}.local</strong>.`
-        : `Estás en tu red. Controlá todo desde <strong>http://${host}.local</strong> o <strong>http://${data.wifi.ip}</strong>.`;
+        ? `After saving, switch back to your home WiFi and open <strong>http://${host}.local</strong>.`
+        : `You are on your network. Control everything from <strong>http://${host}.local</strong> or <strong>http://${data.wifi.ip}</strong>.`;
     }
 
     if (data.usb) setUsbUi(data.usb);
@@ -148,8 +148,8 @@
   const scanWifi = async () => {
     const btn = $("btn-scan");
     btn.disabled = true;
-    btn.textContent = "Buscando…";
-    els.wifiList.innerHTML = "<li class='muted'>Escaneando redes…</li>";
+    btn.textContent = "Scanning…";
+    els.wifiList.innerHTML = "<li class='muted'>Scanning networks…</li>";
     try {
       const res = await fetch("/api/wifi/scan");
       const list = await res.json();
@@ -168,22 +168,22 @@
           els.wifiList.appendChild(li);
         });
       if (!els.wifiList.children.length) {
-        els.wifiList.innerHTML = "<li class='muted'>No se encontraron redes</li>";
+        els.wifiList.innerHTML = "<li class='muted'>No networks found</li>";
       }
     } catch (_) {
-      els.wifiList.innerHTML = "<li class='muted'>Error al escanear</li>";
+      els.wifiList.innerHTML = "<li class='muted'>Scan failed</li>";
     } finally {
       btn.disabled = false;
-      btn.textContent = "Buscar redes";
+      btn.textContent = "Scan networks";
     }
   };
 
   const connectWs = () => {
     const proto = location.protocol === "https:" ? "wss" : "ws";
     ws = new WebSocket(`${proto}://${location.hostname}:81/`);
-    ws.onopen = () => { els.wsState.textContent = "WS conectado"; };
+    ws.onopen = () => { els.wsState.textContent = "WS connected"; };
     ws.onclose = () => {
-      els.wsState.textContent = "WS reconectando…";
+      els.wsState.textContent = "WS reconnecting…";
       setTimeout(connectWs, 2000);
     };
     ws.onerror = () => { els.wsState.textContent = "WS error"; };
@@ -206,7 +206,7 @@
   });
 
   $("btn-reboot").addEventListener("click", async () => {
-    if (!confirm("¿Reiniciar FosiFix?")) return;
+    if (!confirm("Reboot FosiFix?")) return;
     await fetch("/api/reboot", { method: "POST" });
   });
 
@@ -229,7 +229,7 @@
       reboot: true,
     };
     if (!body.ssid) {
-      alert("Elegí o escribí un SSID");
+      alert("Pick or type an SSID");
       return;
     }
     $("btn-save-wifi").disabled = true;
@@ -243,10 +243,10 @@
       els.saveMsg.hidden = false;
       if (data.ok) {
         els.saveMsg.textContent =
-          `Guardado. Reconectate a tu WiFi de casa y abrí http://${host}.local`;
+          `Saved. Reconnect to your home WiFi and open http://${host}.local`;
         els.saveMsg.className = "hint success";
       } else {
-        els.saveMsg.textContent = "No se pudo guardar";
+        els.saveMsg.textContent = "Could not save";
         els.saveMsg.className = "hint";
       }
     } finally {
@@ -265,16 +265,16 @@
       if (!ev.lengthComputable) return;
       const pct = Math.round((ev.loaded / ev.total) * 100);
       els.otaProgress.value = pct;
-      els.otaMsg.textContent = `Subiendo ${pct}%`;
+      els.otaMsg.textContent = `Uploading ${pct}%`;
     };
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
-        els.otaMsg.textContent = "OTA OK. Reiniciando…";
+        els.otaMsg.textContent = "OTA OK. Rebooting…";
       } else {
-        els.otaMsg.textContent = "OTA falló";
+        els.otaMsg.textContent = "OTA failed";
       }
     };
-    xhr.onerror = () => { els.otaMsg.textContent = "Error de red"; };
+    xhr.onerror = () => { els.otaMsg.textContent = "Network error"; };
     const fd = new FormData();
     fd.append("firmware", file);
     xhr.send(fd);

@@ -164,9 +164,9 @@ bool Mc331Host::begin() {
 
   hostReady_ = true;
   setState(Mc331State::Waiting);
-  Logger::instance().info("USB Host iniciado");
-  Logger::instance().info("Esperando MC331");
-  Logger::instance().info(String("Fix periodico cada ") +
+  Logger::instance().info("USB Host started");
+  Logger::instance().info("Waiting for MC331");
+  Logger::instance().info(String("Periodic Fix every ") +
                           String(periodicFixMs_ / 1000) + "s");
   return true;
 }
@@ -188,7 +188,7 @@ void Mc331Host::loop() {
     if (status_.connected) {
       applyFix();
     } else {
-      Logger::instance().warn("Fix solicitado sin MC331 conectado");
+      Logger::instance().warn("Fix requested but MC331 not connected");
     }
   }
 
@@ -203,7 +203,7 @@ void Mc331Host::loop() {
   if (autoMode_ && status_.connected && periodicFixMs_ > 0 && !fixPending_) {
     if (now - lastPeriodicFixMs_ >= periodicFixMs_) {
       lastPeriodicFixMs_ = now;
-      Logger::instance().info("Reenvio periodico del Fix");
+      Logger::instance().info("Periodic Fix resend");
       if (!applyFix()) {
         markDisconnected("fix periodico fallido");
       }
@@ -213,7 +213,7 @@ void Mc331Host::loop() {
   if (!status_.connected && autoMode_ && status_.state == Mc331State::Error) {
     if (now - lastRetryMs_ >= retryIntervalMs_) {
       lastRetryMs_ = now;
-      Logger::instance().info("Reintentando");
+      Logger::instance().info("Retrying");
       setState(Mc331State::Waiting);
     }
   }
@@ -242,7 +242,7 @@ void Mc331Host::pollPresence() {
 
   if (status_.connected) {
     if (!addressPresent(status_.address)) {
-      Logger::instance().warn("MC331 apagado o desconectado (poll)");
+      Logger::instance().warn("MC331 powered off or disconnected (poll)");
       markDisconnected("ausente en bus USB");
     }
     return;
@@ -250,7 +250,7 @@ void Mc331Host::pollPresence() {
 
   for (int i = 0; i < num; ++i) {
     if (openCompatibleDevice(addrs[i])) {
-      Logger::instance().info("MC331 encendido detectado");
+      Logger::instance().info("MC331 power-on detected");
       scheduleAutoFix();
       return;
     }
@@ -264,7 +264,7 @@ void Mc331Host::handleNewDevice(uint8_t address) {
     if (status_.address == address) {
       return;
     }
-    Logger::instance().info("Reconexion detectada");
+    Logger::instance().info("Reconnect detected");
     closeDevice();
     status_.connected = false;
     status_.fixApplied = false;
@@ -289,7 +289,7 @@ void Mc331Host::markDisconnected(const char* reason) {
     return;
   }
 
-  Logger::instance().warn(String("MC331 desconectado: ") + reason);
+  Logger::instance().warn(String("MC331 disconnected: ") + reason);
   closeDevice();
   status_.connected = false;
   status_.fixApplied = false;
@@ -299,7 +299,7 @@ void Mc331Host::markDisconnected(const char* reason) {
   lastPeriodicFixMs_ = 0;
   setState(Mc331State::Disconnected);
   setState(Mc331State::Waiting);
-  Logger::instance().info("Esperando reconexion / encendido");
+  Logger::instance().info("Waiting for reconnect / power-on");
 }
 
 bool Mc331Host::openCompatibleDevice(uint8_t address) {
@@ -467,17 +467,17 @@ bool Mc331Host::sendHidReport(const uint8_t* data, size_t length) {
 
 bool Mc331Host::applyFix() {
   if (!status_.connected) {
-    Logger::instance().warn("applyFix: MC331 no conectado");
+    Logger::instance().warn("applyFix: MC331 not connected");
     return false;
   }
 
   if (!addressPresent(status_.address)) {
-    markDisconnected("dispositivo no presente al aplicar Fix");
+    markDisconnected("device not present while applying Fix");
     return false;
   }
 
   setState(Mc331State::Applying);
-  Logger::instance().info("Enviando paquete HID");
+  Logger::instance().info("Sending HID packet");
 
   const bool ok =
       sendHidReport(Config::hidFixPacket(), Config::kHidReportSize);
@@ -488,11 +488,11 @@ bool Mc331Host::applyFix() {
     status_.fixCount += 1;
     status_.lastError = "";
     status_.periodicFixMs = periodicFixMs_;
-    Logger::instance().info("Fix aplicado");
+    Logger::instance().info("Fix applied");
     setState(Mc331State::Fixed);
   } else {
     status_.lastError = "HID transfer failed";
-    Logger::instance().error("Error USB: Fix fallido");
+    Logger::instance().error("USB error: Fix failed");
     setState(Mc331State::Error);
   }
 
@@ -512,7 +512,7 @@ void Mc331Host::scheduleAutoFix() {
   fixPending_ = true;
   settleUntilMs_ = millis() + Config::kUsbBootSettleMs;
   lastPeriodicFixMs_ = settleUntilMs_;
-  Logger::instance().info("Esperando settle del DSP");
+  Logger::instance().info("Waiting for DSP settle");
 }
 
 void Mc331Host::closeDevice() {

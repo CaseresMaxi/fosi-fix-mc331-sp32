@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -22,37 +22,37 @@
 
   <main>
     <section class="setup-banner" id="setup-banner" hidden>
-      <h2>Conectar a tu WiFi de casa</h2>
+      <h2>Connect to your home WiFi</h2>
       <p>
-        Estás en el AP de configuración. Elegí tu red, guardá, y después
-        <strong>volvé a tu WiFi normal</strong>. Controlá FosiFix desde
-        <code id="setup-url">http://fosifix.local</code> sin quedarte en este AP.
+        You are on the setup access point. Pick your network, save, then
+        <strong>switch back to your normal WiFi</strong>. Control FosiFix at
+        <code id="setup-url">http://fosifix.local</code> without staying on this AP.
       </p>
     </section>
 
     <section class="hero-status" id="usb-card">
       <div class="status-pill" id="usb-pill">Checking…</div>
-      <h2 id="usb-title">Amplificador MC331</h2>
-      <p id="usb-detail">Conectá el USB OTG del ESP32 al MC331</p>
+      <h2 id="usb-title">MC331 amplifier</h2>
+      <p id="usb-detail">Connect the ESP32 OTG USB to the MC331</p>
       <div class="actions">
-        <button id="btn-fix" class="primary">Aplicar Fix ahora</button>
-        <button id="btn-reboot" class="ghost">Reiniciar FosiFix</button>
+        <button id="btn-fix" class="primary">Apply Fix now</button>
+        <button id="btn-reboot" class="ghost">Reboot FosiFix</button>
       </div>
     </section>
 
     <section class="grid">
       <article>
-        <h3>Sistema</h3>
+        <h3>System</h3>
         <dl>
           <div><dt>Uptime</dt><dd id="uptime">—</dd></div>
-          <div><dt>Último Fix</dt><dd id="last-fix">—</dd></div>
+          <div><dt>Last Fix</dt><dd id="last-fix">—</dd></div>
           <div><dt>Fixes</dt><dd id="fix-count">0</dd></div>
-          <div><dt>Conexiones</dt><dd id="connect-count">0</dd></div>
+          <div><dt>Connections</dt><dd id="connect-count">0</dd></div>
         </dl>
       </article>
 
       <article>
-        <h3>Memoria</h3>
+        <h3>Memory</h3>
         <dl>
           <div><dt>RAM</dt><dd id="ram">—</dd></div>
           <div><dt>PSRAM</dt><dd id="psram">—</dd></div>
@@ -63,7 +63,7 @@
       <article>
         <h3>WiFi</h3>
         <dl>
-          <div><dt>Estado</dt><dd id="wifi-state">—</dd></div>
+          <div><dt>Status</dt><dd id="wifi-state">—</dd></div>
           <div><dt>SSID</dt><dd id="wifi-ssid">—</dd></div>
           <div><dt>IP</dt><dd id="wifi-ip">—</dd></div>
           <div><dt>Hostname</dt><dd id="wifi-host">—</dd></div>
@@ -73,22 +73,22 @@
 
     <section class="panel" id="wifi-panel">
       <div class="panel-head">
-        <h3>Red WiFi</h3>
-        <button type="button" id="btn-scan" class="ghost small">Buscar redes</button>
+        <h3>WiFi network</h3>
+        <button type="button" id="btn-scan" class="ghost small">Scan networks</button>
       </div>
       <p class="hint" id="wifi-hint">
-        Después de guardar, reconectate a tu WiFi de casa y abrí
-        <strong>http://fosifix.local</strong> para controlar el dispositivo.
+        After saving, reconnect to your home WiFi and open
+        <strong>http://fosifix.local</strong> to control the device.
       </p>
       <ul id="wifi-list" class="wifi-list"></ul>
       <form id="settings-form" class="form">
         <label>SSID<input name="ssid" id="ssid" autocomplete="off" required /></label>
         <label>Password<input name="password" id="password" type="password" autocomplete="new-password" placeholder="••••••••" /></label>
         <label>Hostname<input name="hostname" id="hostname" value="fosifix" /></label>
-        <label>Reintento WiFi (ms)<input name="retryIntervalMs" id="retry" type="number" min="500" step="100" value="3000" /></label>
-        <label>Reenviar Fix cada (s)<input name="periodicFixSec" id="periodic-fix" type="number" min="5" step="5" value="30" /></label>
-        <label class="check"><input type="checkbox" id="autoMode" checked /> Modo automático del Fix</label>
-        <button type="submit" class="primary" id="btn-save-wifi">Guardar y conectar a mi red</button>
+        <label>WiFi retry (ms)<input name="retryIntervalMs" id="retry" type="number" min="500" step="100" value="3000" /></label>
+        <label>Resend Fix every (s)<input name="periodicFixSec" id="periodic-fix" type="number" min="5" step="5" value="30" /></label>
+        <label class="check"><input type="checkbox" id="autoMode" checked /> Automatic Fix mode</label>
+        <button type="submit" class="primary" id="btn-save-wifi">Save and join my network</button>
       </form>
       <p class="hint success" id="save-msg" hidden></p>
     </section>
@@ -99,7 +99,7 @@
       </div>
       <form id="ota-form" class="form ota">
         <input type="file" id="firmware" accept=".bin" required />
-        <button type="submit" class="primary">Actualizar firmware</button>
+        <button type="submit" class="primary">Update firmware</button>
         <progress id="ota-progress" max="100" value="0"></progress>
         <p id="ota-msg" class="muted"></p>
       </form>
@@ -108,7 +108,7 @@
     <section class="panel logs">
       <div class="panel-head">
         <h3>Logs</h3>
-        <button id="btn-clear-logs" class="ghost small">Limpiar</button>
+        <button id="btn-clear-logs" class="ghost small">Clear</button>
       </div>
       <div id="log-view" class="log-view"></div>
     </section>
