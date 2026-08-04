@@ -1,4 +1,5 @@
 #include "HttpServer.h"
+#include "UiAssets.h"
 
 #include <ArduinoJson.h>
 #include <LittleFS.h>
@@ -104,10 +105,7 @@ HttpServer::HttpServer(Settings& settings, WifiManager& wifi, Mc331Host& usb)
       ws_(Config::kWsPort) {}
 
 bool HttpServer::begin() {
-  if (!LittleFS.begin(true)) {
-    Logger::instance().error("LittleFS mount failed");
-    return false;
-  }
+  LittleFS.begin(true);
 
   bootMs_ = millis();
   setupRoutes();
@@ -132,7 +130,7 @@ bool HttpServer::begin() {
   }
 
   started_ = true;
-  Logger::instance().info("Servidor iniciado");
+  Logger::instance().info(String("Servidor iniciado · UI ") + FOSIFIX_UI_BUILD);
   return true;
 }
 
@@ -204,9 +202,8 @@ void HttpServer::sendFallbackUi() {
 }
 
 void HttpServer::handleRoot() {
-  if (!serveFile("/index.html")) {
-    sendFallbackUi();
-  }
+  server_.sendHeader("Cache-Control", "no-store");
+  server_.send_P(200, "text/html", INDEX_HTML);
 }
 
 void HttpServer::handleStatus() {
@@ -337,6 +334,7 @@ String HttpServer::buildStatusJson() const {
 
   doc["app"] = Config::kAppName;
   doc["version"] = Config::kVersion;
+  doc["uiBuild"] = FOSIFIX_UI_BUILD;
   doc["uptimeMs"] = millis() - bootMs_;
   doc["heapFree"] = ESP.getFreeHeap();
   doc["heapSize"] = ESP.getHeapSize();
@@ -422,14 +420,27 @@ String HttpServer::contentType(const String& path) const {
 }
 
 bool HttpServer::serveFile(const String& path) {
-  if (!LittleFS.exists(path)) {
-    return false;
+  server_.sendHeader("Cache-Control", "no-store");
+  if (path == "/style.css") {
+    server_.send_P(200, "text/css", STYLE_CSS);
+    return true;
   }
-  File file = LittleFS.open(path, "r");
-  if (!file) {
-    return false;
+  if (path == "/app.js") {
+    server_.send_P(200, "application/javascript", APP_JS);
+    return true;
   }
-  server_.streamFile(file, contentType(path));
-  file.close();
-  return true;
+  if (path == "/index.html" || path == "/") {
+    server_.send_P(200, "text/html", INDEX_HTML);
+    return true;
+  }
+  if (LittleFS.exists(path)) {
+    File file = LittleFS.open(path, "r");
+    if (!file) {
+      return false;
+    }
+    server_.streamFile(file, contentType(path));
+    file.close();
+    return true;
+  }
+  return false;
 }

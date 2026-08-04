@@ -1,120 +1,211 @@
 # FosiFix
 
-ESP32-S3 USB Host module that permanently applies the community **Low Volume Cut-Off Fix** to the [Fosi Audio MC331](https://fosiaudio.com/).
+**FosiFix** es un pequeño dispositivo basado en **ESP32-S3** que se conecta al amplificador **Fosi Audio MC331** y corrige automáticamente el corte de audio a bajo volumen (noise gate agresivo del DSP).
 
-When the amplifier boots, its MCU reloads factory DSP defaults and re-enables an aggressive noise gate. FosiFix detects the amp over USB, waits for DSP settle, and injects the known HID payload that disables it — automatically, on every connect.
+Cuando encendés el amplificador, su electrónica interna vuelve a poner el “noise gate” en valores de fábrica. FosiFix detecta el amp por USB y vuelve a aplicar el ajuste de la comunidad (~**-90 dB**), una y otra vez, sin que tengas que usar una PC.
 
-## Hardware
+> Proyecto open source, independiente. No está afiliado a Fosi Audio.
 
-| Item | Notes |
-|------|--------|
-| MCU | ESP32-S3-WROOM-1 (N16R8: 16 MB Flash + 8 MB PSRAM) |
-| USB OTG | USB Host → MC331 |
-| USB Serial (CH343) | Programming + Serial logs only |
-| Network | WiFi (+ mDNS `fosifix.local`) |
+---
 
-Compatible MC331 USB IDs:
+## ¿Qué necesitás?
 
-- `VID 0x8888` / `PID 0x1717` (USB mode)
-- `VID 0x8888` / `PID 0x171E` (OPT / AUX control)
+| Elemento | Detalle |
+|----------|---------|
+| Placa | **ESP32-S3** con flash grande (recomendado **N16R8**: 16 MB flash + 8 MB PSRAM) y **USB OTG** |
+| Cables | 1) Cable USB de **datos** a la PC (puerto de programación) · 2) Cable USB-C al **MC331** (puerto OTG del ESP32) |
+| PC | Linux o macOS (Windows: usá [PlatformIO IDE](https://platformio.org/platformio-ide)) |
+| Amplificador | Fosi Audio **MC331** |
 
-## Features
+### Importante: dos puertos USB en la placa
 
-- Automatic MC331 detection, fix, disconnect / reconnect handling
-- Modular architecture ready for DSP tools, MQTT, Home Assistant, etc.
-- Captive-style first-boot WiFi setup AP: **FosiFix Setup**
-- Web UI at `http://fosifix.local`
-- REST API + WebSocket live logs
-- OTA firmware update from the browser
-- Preferences-backed settings (SSID, password, hostname, auto mode, retry interval)
+Muchas placas ESP32-S3 tienen **dos** conectores USB:
 
-## Project layout
+| Puerto | Para qué sirve |
+|--------|----------------|
+| **UART / COM / Serial** (a menudo con chip CH340/CH343) | **Programar** FosiFix y ver logs |
+| **USB / OTG** | Conectar al **MC331** (modo Host) |
 
-```
-src/
-  main.cpp
-  App.*
-  config/     compile-time constants + HID packet
-  storage/    Preferences settings
-  logger/     Serial + ring buffer + listeners
-  wifi/       STA / AP + mDNS
-  usb/        Mc331Host (USB Host + applyFix)
-  web/        HTTP, REST, WebSocket, OTA
-data/         LittleFS web UI (HTML/CSS/JS)
+Si flasheás por el puerto OTG, suele fallar o quedar en silencio. Usá siempre el de **programación**.
+
+---
+
+## Instalación rápida (recomendado)
+
+En Linux o macOS, desde la carpeta del proyecto:
+
+```bash
+chmod +x scripts/setup_and_flash.sh
+./scripts/setup_and_flash.sh
 ```
 
-## Build
+El script intenta:
 
-Requires [PlatformIO](https://platformio.org/).
+1. Instalar **PlatformIO** si hace falta  
+2. Avisarte por permisos USB (`dialout` en Linux)  
+3. Compilar el firmware  
+4. Detectar el puerto serie y flashear  
+5. Explicarte los pasos de WiFi  
+
+Opciones útiles:
+
+```bash
+./scripts/setup_and_flash.sh --build-only
+./scripts/setup_and_flash.sh --port /dev/ttyUSB0
+./scripts/setup_and_flash.sh --monitor
+./scripts/setup_and_flash.sh --help
+```
+
+---
+
+## Guía paso a paso (sin ser técnico)
+
+### 1. Descargar el proyecto
+
+- Opción A: cloná el repositorio con Git  
+- Opción B: en GitHub, **Code → Download ZIP** y descomprimilo
+
+### 2. Conectar el ESP32 a la PC
+
+1. Usá un cable USB **con datos** (algunos de carga no sirven).  
+2. Conectalo al puerto de **programación** del ESP32 (UART/COM), no al OTG.  
+3. En Linux, si el flasheo dice “Permission denied”:
+
+```bash
+sudo usermod -aG dialout $USER
+```
+
+Luego **cerrá sesión** (o reiniciá) y volvé a intentar.
+
+### 3. Flashear FosiFix
+
+```bash
+cd fosi-fix-mc331-sp32
+chmod +x scripts/setup_and_flash.sh
+./scripts/setup_and_flash.sh
+```
+
+Esperá a que diga que el flasheo terminó.
+
+### 4. Configurar el WiFi (primera vez)
+
+1. En el celular o PC, buscá la red WiFi **`FosiFix Setup`**.  
+2. Conectate (no pide contraseña).  
+3. Abrí el navegador en **`http://192.168.4.1`**.  
+4. Elegí tu WiFi de casa, escribí la contraseña y guardá.  
+5. El ESP32 se reinicia y se une a tu red.  
+6. Volvé a tu WiFi normal.  
+7. Abrí **`http://fosifix.local`**.
+
+Si `fosifix.local` no abre (pasa a veces en Android o routers viejos), mirá en el router la IP del dispositivo llamado `fosifix` y abrila en el navegador (`http://192.168.x.x`).
+
+### 5. Conectar al amplificador
+
+1. Conectá el puerto **USB OTG** del ESP32 al **USB-C del MC331**.  
+2. Encendé el amplificador.  
+3. Esperá unos segundos: FosiFix aplica el Fix solo.  
+4. En la web deberías ver que el MC331 está conectado y el Fix aplicado.
+
+Listo: cada vez que el amp se reinicie o se reconecte, FosiFix vuelve a aplicar el ajuste.
+
+---
+
+## Uso diario
+
+- Dejá el ESP32 alimentado y conectado al MC331.  
+- Abrí `http://fosifix.local` si querés ver el estado o pulsar **Aplicar nuevamente**.  
+- El modo automático reenvía el Fix periódicamente (por defecto cada 30 s) por si el amp vuelve a los valores de fábrica.
+
+---
+
+## Compilar a mano (avanzado)
+
+Con [PlatformIO](https://platformio.org/) instalado:
 
 ```bash
 pio run
-pio run -t upload
-pio run -t uploadfs
-pio device monitor
-```
-
-`uploadfs` flashes the web UI into LittleFS. Without it the API still works, but the UI returns an error page.
-
-### Important: which USB port?
-
-Boards with **two USB connectors**:
-
-| Port | Chip / role | Use for |
-|------|-------------|---------|
-| **COM / Serial** (CH343) | UART → usually `/dev/ttyUSB0` | **Upload + Serial monitor** |
-| **USB / OTG** | ESP32-S3 native USB → `/dev/ttyACM0` | **MC331 only** (USB Host) |
-
-If the monitor is on `/dev/ttyACM0` and stays blank, you are on the wrong cable. After `usb_host_install()` the native USB PHY becomes Host and CDC/JTAG on that port goes silent.
-
-```bash
-pio device list
 pio run -t upload --upload-port /dev/ttyUSB0
 pio device monitor --port /dev/ttyUSB0
 ```
 
-## First boot
+La interfaz web se **embebe en el firmware** al compilar (no hace falta `uploadfs`).
 
-1. Power the board.
-2. Join WiFi AP **FosiFix Setup**.
-3. Open `http://192.168.4.1` (or `http://fosifix.local`).
-4. Enter your SSID / password and save (device reboots into station mode).
-5. Connect ESP32 USB-OTG to the MC331 USB-C port.
-6. FosiFix applies the fix automatically after a short settle delay.
+---
 
-## REST API
+## Qué hace el firmware
 
-| Method | Path | Description |
+- Detecta el MC331 por USB (`VID 0x8888`, `PID 0x1717` o `0x171E`)  
+- Espera a que el DSP termine de arrancar  
+- Envía el paquete HID del Noise Suppressor (`0x88`) con umbral **~-90 dB**  
+- Reaplica el Fix al reconectar y de forma periódica  
+- Expone WiFi + panel web + OTA + logs
+
+---
+
+## API (referencia)
+
+| Método | Ruta | Descripción |
 |--------|------|-------------|
-| `GET` | `/api/status` | Device, USB, WiFi, memory |
-| `GET` | `/api/logs` | Recent log ring buffer |
-| `POST` | `/api/fix` | Queue `applyFix()` |
-| `POST` | `/api/reboot` | Restart |
-| `POST` | `/api/settings` | JSON settings (reboot by default) |
-| `POST` | `/api/ota` | Multipart firmware upload |
+| `GET` | `/api/status` | Estado USB, WiFi, memoria |
+| `GET` | `/api/logs` | Últimos logs |
+| `POST` | `/api/fix` | Pedir aplicar el Fix |
+| `POST` | `/api/reboot` | Reiniciar |
+| `GET`/`POST` | `/api/settings` | Configuración |
+| `GET` | `/api/wifi/scan` | Escanear redes |
+| `POST` | `/api/ota` | Actualizar firmware por red |
 
-WebSocket live feed: `ws://<ip>:81/` (`status` + `log` messages).
+WebSocket en el puerto **81** (`status` + `log`).
 
-## HID payload
+---
 
-Exact 65-byte report (zeros padded). Do not modify:
+## Hardware compatible
+
+- Placa: ESP32-S3-WROOM-1 **N16R8** (u otra S3 con OTG + suficiente flash)  
+- Amplificador: Fosi Audio MC331  
+- Alimentación: la de la placa / USB de programación; el OTG habla con el amp
+
+---
+
+## Problemas frecuentes
+
+**No aparece ninguna placa al flashear**  
+Cable sin datos, puerto OTG en vez de UART, o faltan permisos `dialout`.
+
+**La web no carga / pantalla rara**  
+Flasheá de nuevo con el script (la UI va dentro del firmware). Probá forzar recarga del navegador.
+
+**`fosifix.local` no funciona**  
+Usá la IP del router. En algunos celulares mDNS no anda.
+
+**El Fix no se aplica**  
+Confirmá cable OTG → MC331, amp encendido, y en la web que diga MC331 conectado. Probá **Aplicar nuevamente**.
+
+**Monitor serie en blanco**  
+Estás mirando el puerto OTG. Abrí el monitor en el puerto UART/COM.
+
+---
+
+## Estructura del proyecto
 
 ```
-00 A5 5A 88 0B FF 00 00
-70 E5 03 00 05 00 64 00
-16
-(+ zeros to 65 bytes)
+src/           firmware (USB Host, WiFi, web, settings)
+data/          interfaz web (se embebe al compilar)
+scripts/       setup_and_flash.sh + embed_ui.py
+platformio.ini configuración PlatformIO
 ```
 
-## Extending
+---
 
-`Mc331Host` owns USB life-cycle. Future DSP register R/W, noise-gate UI, EQ, backups, MQTT, or Home Assistant should plug in as new modules beside `usb/`, `web/`, and `wifi/` — orchestrated from `App`, without rewriting the core.
+## Licencia
 
-## License
+MIT — ver [LICENSE](LICENSE).
 
-Open source — choose a license before publishing (MIT / Apache-2.0 recommended).
+## Créditos
 
-## Credits
+- Investigación comunitaria del Low Volume Cut-Off Fix (foro Fosi Audio / ACP Workbench)  
+- Espressif USB Host Library  
+- Contribuidores de FosiFix
 
-- Community Low Volume Cut-Off Fix research on the Fosi Audio forums
-- Espressif USB Host Library
+## Aviso
+
+Usá este proyecto bajo tu propio riesgo. No modifica el firmware interno del MC331 de forma permanente: el ajuste se reaplica por USB mientras FosiFix esté conectado.

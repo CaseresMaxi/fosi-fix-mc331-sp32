@@ -9,3 +9,4 @@ compile_commands.json
 *.elf
 *.map
 .DS_Store
+src/web/UiAssets.h
